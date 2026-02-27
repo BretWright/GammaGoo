@@ -40,6 +40,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Fluid")
 	void ApplyForceInRadius(FVector Center, float Radius, FVector2D Force);
 
+	/** Applies radial outward force in a radius. Each cell gets pushed away from center. Used by repulsor towers. */
+	UFUNCTION(BlueprintCallable, Category = "Fluid")
+	void ApplyRadialForceInRadius(FVector Center, float Radius, float Strength);
+
 	/** Freezes or thaws cells in a radius. Frozen cells skip the flow step. */
 	UFUNCTION(BlueprintCallable, Category = "Fluid")
 	void SetFrozenInRadius(FVector Center, float Radius, bool bFreeze);
