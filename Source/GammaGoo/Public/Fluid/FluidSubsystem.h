@@ -88,6 +88,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Fluid|Tuning", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float OscillationClamp = FluidConstants::DefaultOscillationClamp;
 
+	UPROPERTY(EditAnywhere, Category = "Fluid|Tuning", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float VelocityDamping = FluidConstants::DefaultVelocityDamping;
+
 	UPROPERTY(EditAnywhere, Category = "Fluid|Tuning", meta = (ClampMin = "0.001", ClampMax = "1.0"))
 	float SimStepRate = FluidConstants::DefaultSimStepRate;
 
@@ -105,6 +108,9 @@ private:
 
 	/** Per-step accumulator parallel to Grid. Avoids double-buffer allocation. */
 	TArray<float> FluidDeltas;
+
+	/** Per-step velocity accumulator: tracks directional outflow for FlowVelocity derivation. */
+	TArray<FVector2D> FlowVelocityDeltas;
 
 	IConsoleVariable* CVarDebugDraw = nullptr;
 };

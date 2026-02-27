@@ -17,6 +17,7 @@ void UFluidSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	Grid.SetNum(FluidConstants::TotalCells);
 	FluidDeltas.SetNum(FluidConstants::TotalCells);
+	FlowVelocityDeltas.SetNum(FluidConstants::TotalCells);
 
 	CVarDebugDraw = IConsoleManager::Get().RegisterConsoleVariable(
 		TEXT("fluid.DebugDraw"),
@@ -94,12 +95,21 @@ void UFluidSubsystem::BakeTerrainHeights()
 
 void UFluidSubsystem::SimStep()
 {
-	// Clear accumulator
+	// Clear accumulators
 	FMemory::Memzero(FluidDeltas.GetData(), FluidDeltas.Num() * sizeof(float));
+	FMemory::Memzero(FlowVelocityDeltas.GetData(), FlowVelocityDeltas.Num() * sizeof(FVector2D));
 
 	// Cardinal neighbor offsets
 	static const int32 DX[4] = { 1, -1, 0,  0 };
 	static const int32 DY[4] = { 0,  0, 1, -1 };
+
+	// Direction vectors for velocity computation (matches DX/DY order)
+	static const FVector2D DirVec[4] = {
+		FVector2D(1.f, 0.f),   // +X (East)
+		FVector2D(-1.f, 0.f),  // -X (West)
+		FVector2D(0.f, 1.f),   // +Y (North)
+		FVector2D(0.f, -1.f)   // -Y (South)
+	};
 
 	// --- Pass 1: Compute transfers, accumulate deltas ---
 	for (int32 Y = 0; Y < FluidConstants::GridSize; ++Y)
@@ -159,6 +169,7 @@ void UFluidSubsystem::SimStep()
 				const int32 NX = X + DX[Dir];
 				const int32 NY = Y + DY[Dir];
 				FluidDeltas[GetCellIndex(NX, NY)] += NeighborTransfer[Dir];
+				FlowVelocityDeltas[Idx] += DirVec[Dir] * NeighborTransfer[Dir];
 			}
 		}
 	}
@@ -167,7 +178,8 @@ void UFluidSubsystem::SimStep()
 	for (int32 I = 0; I < FluidConstants::TotalCells; ++I)
 	{
 		Grid[I].FluidVolume = FMath::Max(0.f, Grid[I].FluidVolume + FluidDeltas[I]);
-		// TODO Week 2: Derive FlowVelocity from directional outflow for material scrolling
+		// Derive FlowVelocity: damp existing + add new outflow direction
+		Grid[I].FlowVelocity = Grid[I].FlowVelocity * VelocityDamping + FlowVelocityDeltas[I];
 	}
 
 	// Debug draw
@@ -326,7 +338,6 @@ void UFluidSubsystem::ApplyForceInRadius(FVector Center, float Radius, FVector2D
 			const int32 Idx = GetCellIndex(X, Y);
 			if (Grid[Idx].FluidVolume <= KINDA_SMALL_NUMBER) { continue; }
 
-			// TODO Week 2: Add velocity damping before integrating FlowVelocity into flow
 			const float Falloff = 1.f - (Dist / Radius);
 			Grid[Idx].FlowVelocity += Force * Falloff;
 		}

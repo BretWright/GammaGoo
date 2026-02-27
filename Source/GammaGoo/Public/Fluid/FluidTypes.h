@@ -48,4 +48,5 @@ namespace FluidConstants
 	constexpr float DefaultFlowRate = 0.25f;         // Viscosity control
 	constexpr float DefaultOscillationClamp = 0.5f;  // Max transfer fraction
 	constexpr float DefaultSimStepRate = 1.f / 30.f; // 30Hz fixed timestep
+	constexpr float DefaultVelocityDamping = 0.9f;  // Per-step multiplier. 0.9 = 10% decay per step.
 }
