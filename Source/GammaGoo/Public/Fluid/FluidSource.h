@@ -28,6 +28,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Fluid|Source")
 	void Deactivate();
 
+	UFUNCTION(BlueprintCallable, Category = "Fluid|Source")
+	void SetSpawnRate(float NewRate) { SpawnRate = NewRate; }
+
+	UFUNCTION(BlueprintPure, Category = "Fluid|Source")
+	float GetSpawnRate() const { return SpawnRate; }
+
 protected:
 	/** Volume of fluid added per SpawnInterval. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fluid|Source")
