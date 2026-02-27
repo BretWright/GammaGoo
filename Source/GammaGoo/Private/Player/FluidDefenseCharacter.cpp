@@ -1,6 +1,7 @@
 // Copyright 2026 Bret Wright. All Rights Reserved.
 
 #include "Player/FluidDefenseCharacter.h"
+#include "UI/FluidSiegeHUD.h"
 #include "Player/BuildComponent.h"
 #include "Fluid/FluidSubsystem.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -45,6 +46,17 @@ void AFluidDefenseCharacter::BeginPlay()
 		FluidCheckInterval,
 		/*bLoop=*/true
 	);
+
+	// Create HUD widget
+	if (HUDWidgetClass && IsLocallyControlled())
+	{
+		HUDWidget = CreateWidget<UFluidSiegeHUD>(Cast<APlayerController>(GetController()), HUDWidgetClass);
+		if (HUDWidget)
+		{
+			HUDWidget->InitHUD(this);
+			HUDWidget->AddToViewport();
+		}
+	}
 }
 
 void AFluidDefenseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

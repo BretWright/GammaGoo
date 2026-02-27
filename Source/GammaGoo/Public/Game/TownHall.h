@@ -11,6 +11,7 @@ class UFluidSubsystem;
 class UStaticMeshComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTownDestroyed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnTownHealthChanged, float, CurrentHealth, float, MaxHealth);
 
 UCLASS(BlueprintType, Blueprintable)
 class GAMMAGOO_API ATownHall : public AActor
@@ -27,6 +28,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "TownHall")
 	FOnTownDestroyed OnTownDestroyed;
+
+	UPROPERTY(BlueprintAssignable, Category = "TownHall")
+	FOnTownHealthChanged OnHealthChanged;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TownHall")

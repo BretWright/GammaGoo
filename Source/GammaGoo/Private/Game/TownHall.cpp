@@ -40,6 +40,7 @@ void ATownHall::CheckFluidDamage()
 
 	const float Damage = Depth * DamagePerDepthPerSecond * DamageCheckInterval;
 	Health = FMath::Max(0.f, Health - Damage);
+	OnHealthChanged.Broadcast(Health, MaxHealth);
 
 	if (Health <= 0.f)
 	{
