@@ -1,8 +1,8 @@
 # GammaGoo — CONTEXT.md
 
 > **Last Updated:** 2026-02-27
-> **Session:** Week 2 — Terrain + Rendering implementation
-> **Branch:** `feature/week2-terrain-rendering` (7 commits ahead of main)
+> **Session:** Week 2 — Terrain + Rendering COMPLETE
+> **Branch:** `main` (Week 2 merged, pushed to origin)
 
 ---
 
@@ -14,14 +14,14 @@
 - Existing content: ThirdPerson level, Variant_Combat level, Enhanced Input setup
 - GitHub repo: https://github.com/BretWright/GammaGoo.git
 - **Week 1 complete:** Full fluid simulation core (UFluidSubsystem, AFluidSource)
-- **Week 2 in progress:** Terrain, rendering pipeline, and surface material
+- **Week 2 complete:** Terrain, rendering pipeline, surface material, test level — compiled and merged
 
 ### What Was Done This Session (Week 2)
 1. **Fixed BakeTerrainHeights timing** — moved from `Initialize()` to `OnWorldBeginPlay()` so landscape/terrain actors are registered before line traces fire
 2. **Derived FlowVelocity from outflow** — DirVec[4] tracks cardinal direction of each transfer in SimStep Pass 1, accumulated into FlowVelocityDeltas buffer, applied with per-step damping (0.9 decay) in Pass 2
 3. **Added velocity damping** — `VelocityDamping` tuning parameter prevents FlowVelocity from accumulating unboundedly from `ApplyForceInRadius`
 4. **Built render target update pipeline** — `UpdateRenderTargets()` writes grid data to two render targets each sim step via `ENQUEUE_RENDER_COMMAND`:
-   - Height RT (R16F): R=SurfaceHeight, G=FluidVolume, B=0, A=HasFluid
+   - Height RT (RGBA16F): R=SurfaceHeight, G=FluidVolume, B=0, A=HasFluid
    - Flow RT (RGBA16F): R=FlowVelocity.X (0.5=zero), G=FlowVelocity.Y, B=bFrozen, A=1
 5. **Created AFluidSurfaceRenderer** — actor that owns plane mesh + render targets, registers them with subsystem, creates dynamic material instance with HeightTexture/FlowTexture bindings
 6. **Created SM_FluidPlane** — 128x128 subdivided plane mesh (16641 verts, 12800x12800cm) imported via OBJ
@@ -33,6 +33,9 @@
    - Roughness switching (0.15 wet, 0.05 frozen)
    - Opacity mask from has-fluid flag (masked blend mode)
 8. **Built Millbrook Valley test level** (Lvl_MillbrookValley) — 64 terrain tiles forming 3-tier bowl topology with 3 fluid source placeholders and renderer placeholder
+9. **Fixed Height RT format** — changed from RTF_R16f to RTF_RGBA16f (was writing 4-channel FFloat16Color to single-channel texture)
+10. **Compiled successfully** — all C++ verified against UE 5.7 RHI API (LockTexture2D exists but deprecated since 5.6)
+11. **Merged to main** — 8 commits fast-forwarded, pushed to origin
 
 ### Implementation Status
 
@@ -67,12 +70,10 @@
 
 ## What's Next
 
-### Immediate — Compile & Test Week 2
-1. **Compile the project** — new files: FluidSurfaceRenderer.h/.cpp, modified FluidSubsystem
-2. **RHI API verification** — `RHICmdList.LockTexture2D` may need adjustment for UE 5.7 (see Known Issues)
-3. Replace placeholder actors in Lvl_MillbrookValley with real C++ actors (AFluidSource, AFluidSurfaceRenderer)
-4. PIE test: verify fluid flows downhill, surface renders, debug draw matches visual
-5. **Milestone:** Visible water flowing through the valley
+### Immediate — PIE Test Week 2
+1. Replace placeholder actors in Lvl_MillbrookValley with real C++ actors (AFluidSource, AFluidSurfaceRenderer)
+2. PIE test: verify fluid flows downhill, surface renders, debug draw matches visual
+3. **Milestone:** Visible water flowing through the valley
 
 ### Week 3 — Player + Towers
 1. Adapt existing third-person character for AFluidDefenseCharacter
@@ -96,12 +97,10 @@
 - **Terrain approach:** Currently using box-tile terrain for PoC. May upgrade to proper UE Landscape with sculpted heightmap for visual quality pass.
 - **GameplayStateTree plugin:** Listed in CLAUDE.md but missing from .uproject. Add before wave system work (Week 4).
 - **Existing Variant_Combat content:** Repurpose weapon VFX and UI as starting points for heat lance and tower effects.
-- **RHI texture lock API:** `RHICmdList.LockTexture2D` used in UpdateRenderTargets — if UE 5.7 changed this API, fall back to `RHILockTexture2D` free function or `UKismetRenderingLibrary` approach.
+- **RHI texture lock API:** Current code uses `RHICmdList.LockTexture2D` (deprecated since UE 5.6, functional in 5.7). Consider migrating to `LockTexture()` during polish pass.
 
 ## Known Issues / Blockers
 
-- **Not yet compiled with Week 2 changes** — FluidSurfaceRenderer and render target pipeline need build verification
-- **RHI LockTexture2D** — may not compile in UE 5.7 if the API moved to a free function; plan has fallback documented
-- **Render target format** — R16F height RT may not encode surface heights > ~65000cm in half-float; current Millbrook Valley max is 2500cm so this is fine for PoC
-- **UMG module** — verified valid in UE 5.7, not a concern
+- **Placeholder actors in Millbrook Valley** — need replacing with real AFluidSource and AFluidSurfaceRenderer before PIE test
 - **Normal map scrolling** — M_FluidSurface does not yet have panning normal maps driven by FlowVelocity. Add during visual polish pass.
+- **LockTexture2D deprecation** — API works in UE 5.7 but marked for removal. Migrate to `LockTexture()` when convenient.
