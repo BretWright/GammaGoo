@@ -9,6 +9,7 @@
 
 class UFluidSubsystem;
 class UBuildComponent;
+class UFluidSiegeHUD;
 class UInputAction;
 class UInputMappingContext;
 
@@ -46,6 +47,13 @@ protected:
 	// --- Build Component ---
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player|Build")
 	TObjectPtr<UBuildComponent> BuildComponent;
+
+	// --- HUD ---
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|UI")
+	TSubclassOf<UFluidSiegeHUD> HUDWidgetClass;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Player|UI")
+	TObjectPtr<UFluidSiegeHUD> HUDWidget;
 
 	// --- Enhanced Input ---
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player|Input")
