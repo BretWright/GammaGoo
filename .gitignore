@@ -1,1 +1,12 @@
-/Saved
+# UE build artifacts
+Binaries/
+Intermediate/
+DerivedDataCache/
+
+# Editor/IDE generated
+.vs/
+*.sln
+.vsconfig
+
+# Runtime
+Saved/
