@@ -456,6 +456,34 @@ void UFluidSubsystem::ApplyForceInRadius(FVector Center, float Radius, FVector2D
 	}
 }
 
+void UFluidSubsystem::ApplyRadialForceInRadius(FVector Center, float Radius, float Strength)
+{
+	const FIntPoint CenterCell = WorldToCell(Center);
+	const int32 CellRadius = FMath::CeilToInt(Radius / CellWorldSize);
+
+	for (int32 DY = -CellRadius; DY <= CellRadius; ++DY)
+	{
+		for (int32 DX = -CellRadius; DX <= CellRadius; ++DX)
+		{
+			const int32 X = CenterCell.X + DX;
+			const int32 Y = CenterCell.Y + DY;
+			if (!IsValidCell(X, Y)) { continue; }
+
+			const FVector CellPos = CellToWorld(X, Y);
+			const FVector2D Offset(CellPos.X - Center.X, CellPos.Y - Center.Y);
+			const float Dist = Offset.Size();
+			if (Dist > Radius || Dist < KINDA_SMALL_NUMBER) { continue; }
+
+			const int32 Idx = GetCellIndex(X, Y);
+			if (Grid[Idx].FluidVolume <= KINDA_SMALL_NUMBER) { continue; }
+
+			const FVector2D Dir = Offset / Dist;
+			const float Falloff = 1.f - (Dist / Radius);
+			Grid[Idx].FlowVelocity += Dir * Strength * Falloff;
+		}
+	}
+}
+
 void UFluidSubsystem::SetFrozenInRadius(FVector Center, float Radius, bool bFreeze)
 {
 	const FIntPoint CenterCell = WorldToCell(Center);

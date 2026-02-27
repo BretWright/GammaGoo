@@ -2,12 +2,16 @@
 
 #include "Fluid/FluidSource.h"
 #include "Fluid/FluidSubsystem.h"
+#include "Components/SceneComponent.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 
 AFluidSource::AFluidSource()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
+	USceneComponent* SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
+	RootComponent = SceneRoot;
 }
 
 void AFluidSource::BeginPlay()

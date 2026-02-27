@@ -9,6 +9,7 @@
 #include "FluidSource.generated.h"
 
 class UFluidSubsystem;
+class USceneComponent;
 
 UCLASS(BlueprintType, Blueprintable)
 class GAMMAGOO_API AFluidSource : public AActor
