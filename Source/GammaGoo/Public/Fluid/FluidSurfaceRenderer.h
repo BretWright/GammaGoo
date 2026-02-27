@@ -28,7 +28,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Fluid|Rendering")
 	TObjectPtr<UStaticMeshComponent> FluidPlaneMesh;
 
-	/** 128x128 R16F — encodes fluid surface height per cell. */
+	/** 128x128 RGBA16F — R=SurfaceHeight, G=FluidVolume, B=unused, A=HasFluid. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Fluid|Rendering")
 	TObjectPtr<UTextureRenderTarget2D> HeightRenderTarget;
 

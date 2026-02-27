@@ -57,7 +57,7 @@ void AFluidSurfaceRenderer::CreateRenderTargets()
 	{
 		HeightRenderTarget = NewObject<UTextureRenderTarget2D>(this, TEXT("RT_FluidHeight"));
 		HeightRenderTarget->InitAutoFormat(Size, Size);
-		HeightRenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_R16f;
+		HeightRenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA16f;
 		HeightRenderTarget->Filter = TF_Bilinear;
 		HeightRenderTarget->AddressX = TA_Clamp;
 		HeightRenderTarget->AddressY = TA_Clamp;
