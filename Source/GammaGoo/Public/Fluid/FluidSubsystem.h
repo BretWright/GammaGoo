@@ -9,6 +9,8 @@
 #include "Fluid/FluidTypes.h"
 #include "FluidSubsystem.generated.h"
 
+class UTextureRenderTarget2D;
+
 UCLASS()
 class GAMMAGOO_API UFluidSubsystem : public UWorldSubsystem
 {
@@ -67,6 +69,9 @@ public:
 	/** Read-only grid access for rendering systems. */
 	const TArray<FFluidCell>& GetGrid() const { return Grid; }
 
+	/** Called by AFluidSurfaceRenderer to register render targets for GPU updates. */
+	void SetRenderTargets(UTextureRenderTarget2D* HeightRT, UTextureRenderTarget2D* FlowRT);
+
 protected:
 	// --- Grid state ---
 
@@ -111,6 +116,15 @@ private:
 
 	/** Per-step velocity accumulator: tracks directional outflow for FlowVelocity derivation. */
 	TArray<FVector2D> FlowVelocityDeltas;
+
+	/** Writes fluid grid data to Height and Flow render targets for the surface renderer. */
+	void UpdateRenderTargets();
+
+	UPROPERTY()
+	TObjectPtr<UTextureRenderTarget2D> HeightRenderTarget = nullptr;
+
+	UPROPERTY()
+	TObjectPtr<UTextureRenderTarget2D> FlowRenderTarget = nullptr;
 
 	IConsoleVariable* CVarDebugDraw = nullptr;
 };

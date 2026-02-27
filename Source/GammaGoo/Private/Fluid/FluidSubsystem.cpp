@@ -6,6 +6,10 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "HAL/IConsoleManager.h"
+#include "Engine/TextureRenderTarget2D.h"
+#include "TextureResource.h"
+#include "RenderingThread.h"
+#include "RHICommandList.h"
 
 void UFluidSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -182,6 +186,9 @@ void UFluidSubsystem::SimStep()
 		Grid[I].FlowVelocity = Grid[I].FlowVelocity * VelocityDamping + FlowVelocityDeltas[I];
 	}
 
+	// Push grid data to render targets for the surface renderer
+	UpdateRenderTargets();
+
 	// Debug draw
 	if (bDebugDraw || (CVarDebugDraw && CVarDebugDraw->GetInt() != 0))
 	{
@@ -227,6 +234,111 @@ void UFluidSubsystem::DrawDebugFluid() const
 
 			DrawDebugBox(World, BoxCenter, HalfExtent, Color,
 				/*bPersistent=*/false, /*LifeTime=*/SimStepRate * 1.1f);
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Render Target Updates
+// ---------------------------------------------------------------------------
+
+void UFluidSubsystem::SetRenderTargets(UTextureRenderTarget2D* HeightRT, UTextureRenderTarget2D* FlowRT)
+{
+	HeightRenderTarget = HeightRT;
+	FlowRenderTarget = FlowRT;
+}
+
+void UFluidSubsystem::UpdateRenderTargets()
+{
+	if (!HeightRenderTarget || !FlowRenderTarget) { return; }
+
+	const int32 Size = FluidConstants::GridSize;
+
+	// --- Update Height RT: surface height, volume, and fluid presence ---
+	{
+		TArray<FFloat16Color> HalfPixels;
+		HalfPixels.SetNum(Size * Size);
+
+		for (int32 I = 0; I < FluidConstants::TotalCells; ++I)
+		{
+			const float SurfaceHeight = Grid[I].GetSurfaceHeight();
+			const float HasFluid = Grid[I].FluidVolume > KINDA_SMALL_NUMBER ? 1.f : 0.f;
+			HalfPixels[I] = FFloat16Color(FLinearColor(SurfaceHeight, Grid[I].FluidVolume, 0.f, HasFluid));
+		}
+
+		FTextureRenderTargetResource* RTResource = HeightRenderTarget->GameThread_GetRenderTargetResource();
+		if (RTResource)
+		{
+			ENQUEUE_RENDER_COMMAND(UpdateFluidHeightRT)(
+				[RTResource, Pixels = MoveTemp(HalfPixels), Size](FRHICommandListImmediate& RHICmdList)
+				{
+					FRHITexture* Texture = RTResource->GetRenderTargetTexture();
+					if (!Texture) { return; }
+
+					uint32 Stride = 0;
+					void* Data = RHICmdList.LockTexture2D(
+						Texture, 0, RLM_WriteOnly, Stride, false);
+					if (Data)
+					{
+						const int32 RowBytes = Size * sizeof(FFloat16Color);
+						for (int32 Row = 0; Row < Size; ++Row)
+						{
+							FMemory::Memcpy(
+								static_cast<uint8*>(Data) + Row * Stride,
+								&Pixels[Row * Size],
+								RowBytes
+							);
+						}
+						RHICmdList.UnlockTexture2D(Texture, 0, false);
+					}
+				}
+			);
+		}
+	}
+
+	// --- Update Flow RT: velocity direction and frozen state ---
+	{
+		TArray<FFloat16Color> HalfPixels;
+		HalfPixels.SetNum(Size * Size);
+
+		for (int32 I = 0; I < FluidConstants::TotalCells; ++I)
+		{
+			const FVector2D& Flow = Grid[I].FlowVelocity;
+			// Encode signed velocity into [0,1] range: 0.5 = zero, 0 = -MaxFlow, 1 = +MaxFlow
+			const float MaxFlow = 500.f;
+			const float R = FMath::Clamp((Flow.X / MaxFlow) * 0.5f + 0.5f, 0.f, 1.f);
+			const float G = FMath::Clamp((Flow.Y / MaxFlow) * 0.5f + 0.5f, 0.f, 1.f);
+			const float B = Grid[I].bFrozen ? 1.f : 0.f;
+			HalfPixels[I] = FFloat16Color(FLinearColor(R, G, B, 1.f));
+		}
+
+		FTextureRenderTargetResource* RTResource = FlowRenderTarget->GameThread_GetRenderTargetResource();
+		if (RTResource)
+		{
+			ENQUEUE_RENDER_COMMAND(UpdateFluidFlowRT)(
+				[RTResource, Pixels = MoveTemp(HalfPixels), Size](FRHICommandListImmediate& RHICmdList)
+				{
+					FRHITexture* Texture = RTResource->GetRenderTargetTexture();
+					if (!Texture) { return; }
+
+					uint32 Stride = 0;
+					void* Data = RHICmdList.LockTexture2D(
+						Texture, 0, RLM_WriteOnly, Stride, false);
+					if (Data)
+					{
+						const int32 RowBytes = Size * sizeof(FFloat16Color);
+						for (int32 Row = 0; Row < Size; ++Row)
+						{
+							FMemory::Memcpy(
+								static_cast<uint8*>(Data) + Row * Stride,
+								&Pixels[Row * Size],
+								RowBytes
+							);
+						}
+						RHICmdList.UnlockTexture2D(Texture, 0, false);
+					}
+				}
+			);
 		}
 	}
 }
