@@ -10,3 +10,6 @@ DerivedDataCache/
 
 # Runtime
 Saved/
+
+# Worktrees
+.worktrees/
