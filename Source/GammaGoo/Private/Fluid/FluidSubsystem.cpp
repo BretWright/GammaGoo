@@ -25,10 +25,6 @@ void UFluidSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		ECVF_Cheat
 	);
 
-	// TODO Week 2: BakeTerrainHeights may fire before landscape actors are registered.
-	// If terrain returns all zeros on a landscape level, defer to OnWorldBeginPlay delegate.
-	BakeTerrainHeights();
-
 	GetWorld()->GetTimerManager().SetTimer(
 		SimTimerHandle,
 		FTimerDelegate::CreateUObject(this, &UFluidSubsystem::SimStep),
@@ -51,6 +47,12 @@ void UFluidSubsystem::Deinitialize()
 	}
 
 	Super::Deinitialize();
+}
+
+void UFluidSubsystem::OnWorldBeginPlay(UWorld& InWorld)
+{
+	Super::OnWorldBeginPlay(InWorld);
+	BakeTerrainHeights();
 }
 
 // ---------------------------------------------------------------------------
