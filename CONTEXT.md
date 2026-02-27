@@ -1,7 +1,7 @@
 # GammaGoo — CONTEXT.md
 
 > **Last Updated:** 2026-02-27
-> **Session:** Initial project setup & design phase
+> **Session:** Week 1 — Fluid Simulation Core implementation
 
 ---
 
@@ -14,43 +14,56 @@
 - GitHub repo: https://github.com/BretWright/GammaGoo.git (branch: main)
 
 ### What Was Done This Session
-- Designed complete Fluid Siege tower defense PoC (weapon/combat system, fluid simulation, level design)
-- Created `Fluid_Siege_Implementation_Plan.docx` — full technical GDD covering all systems
-- Set up project documentation: CLAUDE.md, CONTEXT.md, updated README.md
-- Pushed all documentation to GitHub
+- Fixed `.gitignore` (added Binaries/, Intermediate/, DerivedDataCache/, .vs/, *.sln, .worktrees/)
+- Removed 9 accidentally tracked Intermediate files from git
+- Fixed DefaultGame.ini project name to "GammaGoo"
+- **Implemented UFluidSubsystem** — full 128x128 heightfield grid with accumulator-pattern flow algorithm at 30Hz
+- **Implemented AFluidSource** — timer-driven fluid injection actor with Activate/Deactivate API
+- Debug visualization via `fluid.DebugDraw` CVar (blue→red depth coloring)
+- All public API methods: GetFluidHeightAtWorldPos, RemoveFluidInRadius, AddFluidAtCell, ApplyForceInRadius, SetFrozenInRadius, SetBlockedAtCell, GetTotalFluidVolume
 
 ### Implementation Status
 
 | System | Status | Notes |
 |---|---|---|
-| Fluid Simulation (UFluidSubsystem) | **DESIGNED** | Full architecture, API, flow algorithm spec'd |
+| Fluid Simulation (UFluidSubsystem) | **IMPLEMENTED** | Grid init, flow algorithm, debug vis, full API |
+| Fluid Source (AFluidSource) | **IMPLEMENTED** | Timer-driven spawn, cached grid coords |
+| Fluid Types (FFluidCell) | **IMPLEMENTED** | Struct + FluidConstants namespace |
 | Tower System (5 tower types) | **DESIGNED** | Stats, costs, synergy matrix complete |
 | Player Character | **DESIGNED** | Movement penalties, heat lance, build system |
 | Test Level (Millbrook Valley) | **DESIGNED** | 3-tier topology, flow paths, strategic zones |
 | Fluid Rendering | **DESIGNED** | Heightfield → render target → displaced plane |
 | Wave System | **DESIGNED** | 5-wave sequence, basin trigger, build phases |
-| C++ Classes | **NOT STARTED** | Header files need scaffolding |
+
+### Key Files
+
+| File | Purpose |
+|---|---|
+| `Source/GammaGoo/Public/Fluid/FluidTypes.h` | FFluidCell struct, FluidConstants namespace |
+| `Source/GammaGoo/Public/Fluid/FluidSubsystem.h` | UFluidSubsystem header — full public API |
+| `Source/GammaGoo/Private/Fluid/FluidSubsystem.cpp` | Flow algorithm, terrain baking, debug draw |
+| `Source/GammaGoo/Public/Fluid/FluidSource.h` | AFluidSource header |
+| `Source/GammaGoo/Private/Fluid/FluidSource.cpp` | Fluid source implementation |
 
 ---
 
 ## What's Next
 
-### Immediate (Week 1 — Fluid Simulation Core)
-1. Create `Source/GammaGoo/` C++ module structure
-2. Implement `FFluidCell` struct and `UFluidSubsystem` with grid init
-3. Implement flow algorithm with fixed 30Hz substep
-4. Debug visualization: `DrawDebugBox` colored by fluid depth
-5. Place one `AFluidSource` actor on a flat test terrain
-6. **Milestone:** Fluid flows downhill and pools correctly
+### Immediate — Verify & Test
+1. Open project in UE 5.7 editor and compile
+2. Place AFluidSource on the flat ThirdPerson level
+3. Run `fluid.DebugDraw 1` in console — verify fluid spreads symmetrically
+4. **Milestone:** Fluid flows and pools correctly on flat terrain
 
-### After That (Week 2 — Terrain + Rendering)
+### Week 2 — Terrain + Rendering
 1. Build Millbrook Valley landscape (3-tier: ridge, plateau, basin)
-2. Sample terrain heights into fluid grid at init
+2. Fix BakeTerrainHeights timing (may need to defer to OnWorldBeginPlay for landscapes)
 3. Create fluid plane mesh (128x128 subdivisions)
 4. Build Substrate material with height texture displacement
-5. **Milestone:** Visible water flowing through the valley
+5. Derive FlowVelocity from directional outflow (TODO in SimStep Pass 2)
+6. **Milestone:** Visible water flowing through the valley
 
-### Then (Week 3 — Player + Towers)
+### Week 3 — Player + Towers
 1. Adapt existing third-person character for AFluidDefenseCharacter
 2. Add fluid depth movement/damage system
 3. Implement heat lance weapon
@@ -64,10 +77,12 @@
 
 - **Fluid representation:** 2D heightfield confirmed for PoC. May revisit with Niagara Fluids for visual polish pass.
 - **Existing Variant_Combat content:** Can repurpose weapon systems, VFX, and UI as starting points for heat lance and tower VFX.
-- **GameplayStateTree plugin:** Already enabled — use for wave state management (idle → build phase → wave active → wave complete)?
-- **AgentIntegrationKit:** Purpose TBD — check what this provides.
+- **GameplayStateTree plugin:** Already enabled — use for wave state management?
+- **FlowVelocity derivation:** Currently zero in sim (TODO Week 2). Need per-direction outflow tracking.
+- **ApplyForceInRadius damping:** FlowVelocity accumulates unboundedly — add per-step decay in Week 2.
 
 ## Known Issues / Blockers
 
-- GitHub push from Cowork sandbox blocked (no credentials). Must push from local machine.
-- `C:\project\GammaGoo` is outside home directory — can't mount in Cowork. Use git clone for access.
+- **Not yet compiled** — needs UE 5.7 editor build verification
+- BakeTerrainHeights fires during Initialize() before landscape actors may be registered (OK for flat plane, needs fix for Week 2 landscape)
+- Build.cs has `"UMG"` in private deps — verify this is a valid module name in UE 5.7
